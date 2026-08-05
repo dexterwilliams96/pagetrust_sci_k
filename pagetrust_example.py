@@ -26,7 +26,7 @@ def main():
     # Change scores variable into a ranking of scores for visualization
     scores = {node: rank for rank, (node, _) in enumerate(sorted(scores.items(), key=lambda item: item[1], reverse=False), start=1)}
 
-    pos = nx.spring_layout(G, seed=1)
+    pos = nx.spring_layout(G, seed=42)
     pos[origin_doi] = [0, 0]
     node_colors = [scores.get(node, 0.0) for node in G.nodes()]
     nx.draw_networkx_nodes(
@@ -34,7 +34,7 @@ def main():
         pos,
         nodelist=[origin_doi],
         node_color="red",
-        node_size=300,
+        node_size=500,
         node_shape="s",
     )
     nx.draw_networkx_nodes(
@@ -43,7 +43,7 @@ def main():
         nodelist=[node for node in G.nodes() if node != origin_doi],
         node_color=[scores.get(node, 0.0) for node in G.nodes() if node != origin_doi],
         cmap=plt.cm.viridis_r,
-        node_size=300,
+        node_size=200,
     )
     plt.axis("off")
     plt.show()
