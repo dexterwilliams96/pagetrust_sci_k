@@ -27,40 +27,39 @@ def main():
     # Change scores variable into a ranking of scores for visualization
     scores = {node: rank for rank, (node, _) in enumerate(sorted(scores.items(), key=lambda item: item[1], reverse=False), start=1)}
 
-    pos = nx.spring_layout(G, seed=42)
+    pos = nx.spring_layout(G, seed=0)
     pos[origin_doi] = [0, 0]
-    node_colors = [scores.get(node, 0.0) for node in G.nodes() if node != origin_doi and node not in forced_zero_nodes]
     nx.draw_networkx_nodes(
         G,
         pos,
         nodelist=[origin_doi],
         node_color="red",
         node_size=500,
-        node_shape="s",
+        node_shape="o",
     )
-    # Draw nodes in rings around the origin node based on how many hops away they are from the origin node
-    # Nodes should be positioned in rings, color should be based on score
-    # The bottom half of the ring should be formed of all backlinks and the top half of the ring should be formed of forward links
-    # ALL predecessors of origin (recursive
     backlinks = list(nx.ancestors(G, origin_doi))
-    # ALL successors of origin (recursive)
     forwardlinks = list(nx.descendants(G, origin_doi))
     print(len(backlinks), len(forwardlinks))
-    for node in backlinks:
+    for i, node in enumerate(backlinks):
         hops = nx.shortest_path_length(G.to_undirected(), source=origin_doi, target=node)
-        angle = 3.14159 * (list(G.nodes()).index(node) / G.number_of_nodes())
-        radius = hops * 0.5
+        angle = 3.14159 * (i / len(backlinks))
+        radius = hops * 0.25
+        radius += np.random.uniform(-0.005, 0.005)
         pos[node] = [radius * np.cos(angle), radius * np.sin(angle)]
-    for node in forwardlinks:
+    for i, node in enumerate(forwardlinks):
         hops = nx.shortest_path_length(G.to_undirected(), source=origin_doi, target=node)
-        angle = 3.14159 + 3.14159 * (list(G.nodes()).index(node) / G.number_of_nodes())
-        radius = hops * 0.5
+        angle = 3.14159 + 3.14159 * (i / len(forwardlinks))
+        radius = hops * 0.25
+        radius += np.random.uniform(-0.005, 0.005)
         pos[node] = [radius * np.cos(angle), radius * np.sin(angle)]
-    # For all other nodes
+    general_nodes = [node for node in G.nodes() if node != origin_doi and node not in backlinks and node not in forwardlinks]
+    linked_nodes = backlinks + forwardlinks
+    linked_nodes = [node for node in linked_nodes if node not in forced_zero_nodes]
+    node_colors = [scores[node] for node in linked_nodes]
     nx.draw_networkx_nodes(
         G,
         pos,
-        nodelist=[node for node in G.nodes() if node != origin_doi and node not in forced_zero_nodes],
+        nodelist=linked_nodes,
         node_color=node_colors,
         cmap=plt.cm.viridis_r,
         node_size=50,
@@ -68,11 +67,10 @@ def main():
     nx.draw_networkx_nodes(
         G,
         pos,
-        nodelist=forced_zero_nodes,
+        nodelist=[node for node in forced_zero_nodes if node not in general_nodes and node != origin_doi],
         node_color="red",
         node_size=50,
     )
-    # Draw a horizontal line through the center of the figure to separate the backlinks from the forward links
     plt.axhline(0, color="black", linewidth=0.5, linestyle="--")
     plt.axis("off")
     plt.show()

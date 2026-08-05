@@ -7,7 +7,7 @@ def pagetrust(
     M=0,
     beta=1.0,
     z=None,
-    max_iter=3,
+    max_iter=100,
     tol=1e-6,
     forced_zero_nodes=None,
     handle_dangling=True,
