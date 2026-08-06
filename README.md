@@ -1,5 +1,5 @@
 # PageTrust for retracted papers
-This repository contains code to recreate the figure from our paper "TITLE TBD". To run the code you will need a python environment with networkx, numpy, matplotlib, and scipy installed.
+This repository contains code to recreate the figure from our paper "Retraction without Traction: Towards Handling Post-publication Invalidation in Open Science Infrastructure". To run the code you will need a python environment with networkx, numpy, matplotlib, and scipy installed.
 
 `pagetrust.py` contains our implementation of the PageTrust algorithm based on de Kerchove & Van Dooren (2008); this algorithm should function with any directed networkx graph, however, it has not been tested extensively and is computationally expensive.
 
