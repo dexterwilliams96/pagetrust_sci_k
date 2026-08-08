@@ -1,4 +1,6 @@
 import json
+import os
+
 import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
@@ -32,35 +34,50 @@ def main():
         )
     }
 
-    pos = nx.spring_layout(G, seed=0)
-    pos[origin_doi] = [0, 0]
+    # Sorting keeps angles stable across runs (ancestors/descendants are sets)
+    backlinks = sorted(nx.ancestors(G, origin_doi))
+    forwardlinks = sorted(nx.descendants(G, origin_doi))
+    print(len(backlinks), len(forwardlinks))
+    pos_cache = "positions.json"
+    if os.path.exists(pos_cache):
+        with open(pos_cache, "r") as f:
+            pos = {node: np.array(xy) for node, xy in json.load(f).items()}
+    else:
+        rng = np.random.default_rng(0)
+        pos = nx.spring_layout(G, seed=0)
+        pos[origin_doi] = [0, 0]
+        for i, node in enumerate(backlinks):
+            hops = nx.shortest_path_length(
+                G.to_undirected(), source=origin_doi, target=node
+            )
+            angle = 3.14159 * (i / len(backlinks))
+            radius = hops * 0.25
+            radius += rng.uniform(-0.02, 0.02)
+            pos[node] = [radius * np.cos(angle), radius * np.sin(angle)]
+        for i, node in enumerate(forwardlinks):
+            hops = nx.shortest_path_length(
+                G.to_undirected(), source=origin_doi, target=node
+            )
+            angle = 3.14159 + 3.14159 * (i / len(forwardlinks))
+            radius = hops * 0.25
+            radius += rng.uniform(-0.02, 0.02)
+            pos[node] = [radius * np.cos(angle), radius * np.sin(angle)]
+        with open(pos_cache, "w") as f:
+            json.dump(
+                {node: [float(x), float(y)] for node, (x, y) in pos.items()}, f
+            )
+
+    plt.figure(figsize=(9, 7))
     nx.draw_networkx_nodes(
         G,
         pos,
         nodelist=[origin_doi],
         node_color="red",
-        node_size=500,
+        node_size=200,
         node_shape="o",
+        edgecolors="black",
+        linewidths=0.8,
     )
-    backlinks = list(nx.ancestors(G, origin_doi))
-    forwardlinks = list(nx.descendants(G, origin_doi))
-    print(len(backlinks), len(forwardlinks))
-    for i, node in enumerate(backlinks):
-        hops = nx.shortest_path_length(
-            G.to_undirected(), source=origin_doi, target=node
-        )
-        angle = 3.14159 * (i / len(backlinks))
-        radius = hops * 0.25
-        radius += np.random.uniform(-0.005, 0.005)
-        pos[node] = [radius * np.cos(angle), radius * np.sin(angle)]
-    for i, node in enumerate(forwardlinks):
-        hops = nx.shortest_path_length(
-            G.to_undirected(), source=origin_doi, target=node
-        )
-        angle = 3.14159 + 3.14159 * (i / len(forwardlinks))
-        radius = hops * 0.25
-        radius += np.random.uniform(-0.005, 0.005)
-        pos[node] = [radius * np.cos(angle), radius * np.sin(angle)]
     general_nodes = [
         node
         for node in G.nodes()
@@ -89,8 +106,29 @@ def main():
         node_size=50,
     )
     plt.axhline(0, color="black", linewidth=0.5, linestyle="--")
+    ax = plt.gca()
+    ax.text(
+        0.02,
+        0.98,
+        "papers that cite Gautret et al. and their descendants",
+        transform=ax.transAxes,
+        fontstyle="italic",
+        color="gray",
+        ha="left",
+        va="top",
+    )
+    ax.text(
+        0.02,
+        0.02,
+        "papers Gautret et al. cites and their ancestors",
+        transform=ax.transAxes,
+        fontstyle="italic",
+        color="gray",
+        ha="left",
+        va="bottom",
+    )
     plt.axis("off")
-    plt.show()
+    plt.savefig("figure.png", dpi=200, bbox_inches="tight")
 
 
 if __name__ == "__main__":
